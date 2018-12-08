@@ -1065,7 +1065,7 @@ class Model():
 
     def received_maze(self, maze):
         self.__remote_maze = maze
-        #maze.print_walls()
+        # maze.print_walls()   # here could print the maze 
 
     ''' the pacman from the remote system came through the tunnel and is now on our screen'''
     def foreign_pacman_arrived(self):

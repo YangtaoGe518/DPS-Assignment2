@@ -31,7 +31,7 @@ This Protocol runs over TCP, using port 9872. There are 11 message types:   // h
     # score update
     # status update
 
-The network is required to exchange the messages 'maze update','pacman update',
+The network is required to exchange the messages 'pacman update',
 'ghost update', 'score update' and 'status update' every frame in the game. 
 'FOREIGN pacman arrive' message is only sent when FOREIGN pacman arrives the 
 LOCAL maze. 'FOREIGN pacman left' is only sent when FOREIGN pacman leave the 
@@ -40,36 +40,94 @@ screen. 'pacman go home' is sent when AWAY pacman is forcibly sent home.
 'FOREIGN pacman ate ghost' is sent when FOREIGN pacman eats LOCAL ghost. 'eat' is
 sent when LOCAL food is eaten. // this paragraph need to be modified 
 
+'maze update' is only sent once when making connections 
+
+Pacman could eat two objects and ghost with certain mode. food attributes to the mark
+and powerpills can change the mode of ghost.
+
+Gameplay have two state, namely CHASE and FRIGHTEN, they have following meanings:
+    # CHASE: the pacman do not eat the powerpills, so that pacmans are chased by 
+             ghosts
+    # FRIGHTEN: the pacman eats the powerpills, so that pacman frightens ghosts and
+                ghost could be eaten by this kind of pacman
+
 Message Contents   // each section includes a type and a value 
 ================
 
 The contents of a maze update message are:
 
+    - Type: maze_update
+
+    - Value: the maze includes the location of all the food and powerpills 
 
 The contents of a FOREIGN pacman arrive message are:
 
+    - Type: FOREIGN_pacman_arrive
 
+    - Value: grid_x, grid_y, width, height, direction, speed, status of the pacman.
+    
+             grid_x and grid_y is the initialization postion (x, y) for the FOREIGN 
+             pacman and grid_x and grid_y are mapped to maze size. For the initialization,
+             grid_x is 0 and grid_y is 17, which is the start point of AWAY maze.
+
+             width and height are both equal to the acutal size of the canvas
+
+             direction can be choosed from 4 direction. The protocol assumes UP = 0, LEFT = 1,
+             RIGHT = 2 and DOWN = 3
+
+             speed is the initialization speed which is 1 
+
+             status is the initialization status which CHASE mode.
+    // it do not have values !!! need to be modified
+             
 The contents of a FOREIGN pacman left message are:
 
+    - Type: FOREIGN_pacman_left
 
 The contents of a FOREIGN pacman died message are:
 
+    - Type: FOREIGN_pacman_died
 
 The contents of a pacman go home message are:
 
+    - Type: FOREIGN_pacman_go_home
 
 The contents of a pacman update message are:
 
+    - Type: pacman_update
+
+    - Value: pos, dir, speed
+             pos is the postion of the pacman which is a tuple of (x, y). dir is the 
+             direction of the pacman which can be choosed from 4 direction and the 
+             protocol assumes UP = 0, LEFT = 1, RIGHT = 2 and DOWN = 3. speed is the 
+             speed of the pacman which is a binary value.
 
 The contents of a ghost update message are:
 
+    - Type: ghost_update
+
+    - Value: ghostnum, pos, dir, speed, mode
+             ghostnum is a value which is less or equal to 5, it need to be checked after
+             receiving. pos is the postion of the ghost, where different ghost could have
+             various postions and it is a tuple of (x, y). dir is the direction of the ghost 
+             where different ghost could have various directions. The protocol assumes UP = 0,
+             LEFT = 1, RIGHT = 2 and DOWN = 3. speed is the speed of the ghost movement. 
+             mode could only be CHASE or FRIGHTEN.
 
 The contents of a FOREIGN pacman ate ghost message are:
 
+    - Type: FOREIGN_pacman_ate_ghost
+
+    - Value: ghostnum
+             ghostnum is the quantity of the ghost which is a integer from 0 to 5 
 
 The contents of a eat message are:
+    
+    - Type: eat
 
-
+    - Value: pos, is_foreign, is_powerpill
+        	 pos is the postion of the object which is a tuple of (x, y).
+             
 The contents of a score update message are:
 
 

@@ -88,20 +88,25 @@ class Network():
         if not rd:
             pass
         else:
-            #print("got a message")
+            """ every time sending message -- will print once """
+            # print("got a message") 
             recv_bytes = self.__sock.recv(10000)
             self.__recv_buf += recv_bytes  # concat onto whatever is left from prev receive
             recv_len = int.from_bytes(self.__recv_buf[0:2], byteorder='big')
-            #print("len: ", recv_len, "recvlen:", len(self.__recv_buf))
+            """  here get the length of the current message (sending & receiving) """
+            # print("A len: ", recv_len, "recvlen:", len(self.__recv_buf))  
             while (len(self.__recv_buf) - 2 >= recv_len):
-                self.parse_msg(self.__recv_buf[2:recv_len+2])
-                self.__recv_buf = self.__recv_buf[recv_len+2:]
+                self.parse_msg(self.__recv_buf[2:recv_len+2])  # parse the message
+                self.__recv_buf = self.__recv_buf[recv_len+2:] 
                 if len(self.__recv_buf) > 2:
                     recv_len = int.from_bytes(self.__recv_buf[0:2], byteorder='big')
-                    #print("len: ", recv_len, "recvlen:", len(self.__recv_buf))
+                    # print("B len: ", recv_len, "recvlen:", len(self.__recv_buf))
+
+        # not actually understand the function "check for messages"
                     
         
-    def parse_msg(self, buf):
+    def parse_msg(self, buf): 
+        """ function for parsing the message   """
         msg = pickle.loads(buf)
         if msg[0] == "maze":
             maze = msg[1]
@@ -113,7 +118,7 @@ class Network():
             #A pacman has left message
             self.foreign_pacman_left(msg[1])
         elif msg[0] == "pacmandied":
-            #A pacman has left message
+            #A pacman has died message
             self.foreign_pacman_died(msg[1])
         elif msg[0] == "pacmanhome":
             #Pacman go home!
@@ -141,21 +146,21 @@ class Network():
         
 
     def foreign_pacman_arrived(self, msg):
-        #print("received pacman_arrived")
+        # print("received pacman_arrived")
         self.__controller.foreign_pacman_arrived()
 
     def send_foreign_pacman_arrived(self):
-        #print("send pacman_arrived")
+        # print("send pacman_arrived")
         payload = []
         msg = ["newpacman", payload]
         self.send(msg)
 
     def foreign_pacman_left(self, msg):
-        #print("received pacman_left")
+        # print("received pacman_left")
         self.__controller.foreign_pacman_left()
 
     def send_foreign_pacman_left(self):
-        print("send pacman_left")
+        # print("send pacman_left")
         payload = []
         msg = ["pacmanleft", payload]
         self.send(msg)
