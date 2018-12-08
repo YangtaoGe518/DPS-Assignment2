@@ -1,0 +1,136 @@
+Pacman Protocol Specification
+=============================
+
+Terminology
+===========
+
+This specification uses following terminologies to distinguish between
+accessing pacman and several game object (i.e. food, ghost etc):
+
+    # LOCAL: the game object is a local game object, and is currently on
+             the local screen
+    # AWAY: our pacman is current away on the remote screen.
+    # REMOTE: a game object on the remote screen that our AWAY pacman 
+              might interact with
+    # FOREIGN: the other player's pacman. when it is visiting our screen
+
+In this document, when these terms are capitalized, they have these specific 
+meanings.
+
+This Protocol runs over TCP, using port 9872. There are 11 message types:   // here I am not sure what does 9872 here means
+
+    # maze update
+    # FOREIGN pacman arrive
+    # FOREIGN pacman left
+    # FOREIGN pacman died
+    # pacman go home
+    # pacman update
+    # ghost update
+    # FOREIGN pacman ate ghost
+    # eat
+    # score update
+    # status update
+
+The network is required to exchange the messages 'maze update','pacman update',
+'ghost update', 'score update' and 'status update' every frame in the game. 
+'FOREIGN pacman arrive' message is only sent when FOREIGN pacman arrives the 
+LOCAL maze. 'FOREIGN pacman left' is only sent when FOREIGN pacman leave the 
+LOCAL maze. 'FOREIGN pacman died' is sent when FOREIGN pacman dies on local 
+screen. 'pacman go home' is sent when AWAY pacman is forcibly sent home. 
+'FOREIGN pacman ate ghost' is sent when FOREIGN pacman eats LOCAL ghost. 'eat' is
+sent when LOCAL food is eaten. // this paragraph need to be modified 
+
+Message Contents   // each section includes a type and a value 
+================
+
+The contents of a maze update message are:
+
+
+The contents of a FOREIGN pacman arrive message are:
+
+
+The contents of a FOREIGN pacman left message are:
+
+
+The contents of a FOREIGN pacman died message are:
+
+
+The contents of a pacman go home message are:
+
+
+The contents of a pacman update message are:
+
+
+The contents of a ghost update message are:
+
+
+The contents of a FOREIGN pacman ate ghost message are:
+
+
+The contents of a eat message are:
+
+
+The contents of a score update message are:
+
+
+The contents of a status update message are:
+
+
+Message Timing
+==============
+
+
+
+Message Encoding
+================
+
+maze update
+-----------
+
+
+FOREIGN pacman arrive
+---------------------
+
+
+FOREIGN pacman left
+-------------------
+
+
+FOREIGN pacman died
+-------------------
+
+
+pacman go home
+--------------
+
+
+pacman update
+-------------
+
+
+ghost update
+------------
+
+
+FOREIGN pacman ate ghost
+------------------------
+
+
+eat
+---
+
+
+score update
+------------
+
+
+status update
+-------------
+
+
+
+
+
+
+
+
