@@ -17,7 +17,7 @@ accessing pacman and several game object (i.e. food, ghost etc):
     # AWAY: our pacman is current away on the remote screen.
     # FOREIGN: the other player's pacman. when it is visiting our screen
 
-This Protocol runs over TCP, using port 9872. There are 11 message types:   // here I am not sure what does 9872 here means
+This Protocol runs over TCP, using port 9872. There are 11 message types:  
 
     # maze update
     # FOREIGN pacman arrive
@@ -251,7 +251,7 @@ FOREIGN_pacman_go_home messages consist of One byte, encoded as follows:
 
 Field:
 
-    - T: 4 bits type field. Type = FOREIGN_pacman_arrive has decimal value 1.
+    - T: 4 bits type field. Type = FOREIGN_pacman_go_home has decimal value 4.
 
     - unused: 6 bits, not used, but needed to maintain byte alignment. MUST be set
               to zero in this version of the protocol.
@@ -269,7 +269,7 @@ FOREIGN_pacman_go_home messages consist of four bytes, encoded as follows:
 
 Field:
 
-    - T: 4 bits type field. Type = pacman_update has decimal value 1.
+    - T: 4 bits type field. Type = pacman_update has decimal value 5.
 
     - unused: 14 bits, not used, but needed to maintain byte alignment. MUST be set
               to zero in this version of the protocol.
@@ -299,7 +299,7 @@ FOREIGN_pacman_go_home messages consist of Three bytes, encoded as follows:
 
 Field:
 
-    - T: 4 bits type field. Type = ghost_update has decimal value 1.
+    - T: 4 bits type field. Type = ghost_update has decimal value 6.
     
     - unused: 11 bits, not used, but needed to maintain byte alignment. MUST be set
               to zero in this version of the protocol.
@@ -335,7 +335,7 @@ FOREIGN_pacman_arrive messages consist of One byte, encoded as follows:
 
 Field:
 
-    - T: 4 bits type field. Type = FOREIGN_pacman_arrive has decimal value 4.
+    - T: 4 bits type field. Type = FOREIGN_pacman_arrive has decimal value 7.
 
     - unused: 3 bits, not used, but needed to maintain byte alignment. MUST be set
               to zero in this version of the protocol.
@@ -356,7 +356,7 @@ eat messages consist of One byte, encoded as follows:
 
 Field:
 
-    - T: 4 bits type field. Type = eat has decimal value 4.
+    - T: 4 bits type field. Type = eat has decimal value 8.
 
     - posX: 6 bits number field which indicates X (horizontal) postion of food which is
             eaten by the pacman. This value SHOULD only be a number from 0 to 32.
@@ -384,7 +384,7 @@ FOREIGN_pacman_go_home messages consist of four bytes, encoded as follows:
 
 Field:
 
-    - T: 4 bits type field. Type = score_update has decimal value 1.
+    - T: 4 bits type field. Type = score_update has decimal value 9.
 
     - unused: 4 bits, not used, but needed to maintain byte alignment. MUST be set
               to zero in this version of the protocol.
