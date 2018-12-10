@@ -4,18 +4,18 @@ Pacman Protocol Specification
 Terminology
 ===========
 
+This specification uses the terms MUST, SHOULD, and MAY as defined in
+RFC 2119 [rfc2119] [1]
+
 This specification uses following terminologies to distinguish between
 accessing pacman and several game object (i.e. food, ghost etc):
 
     # LOCAL: the game object is a local game object, and is currently on
              the local screen
-    # AWAY: our pacman is current away on the remote screen.
     # REMOTE: a game object on the remote screen that our AWAY pacman 
               might interact with
+    # AWAY: our pacman is current away on the remote screen.
     # FOREIGN: the other player's pacman. when it is visiting our screen
-
-In this document, when these terms are capitalized, they have these specific 
-meanings.
 
 This Protocol runs over TCP, using port 9872. There are 11 message types:   // here I am not sure what does 9872 here means
 
@@ -32,24 +32,41 @@ This Protocol runs over TCP, using port 9872. There are 11 message types:   // h
     # status update
 
 The network is required to exchange the messages 'pacman update',
-'ghost update', 'score update' and 'status update' every frame in the game. 
+'ghost update' and 'score update' every frame in the game. 'score update' and 
+'status update' is only sent when the status is changed. 
+
 'FOREIGN pacman arrive' message is only sent when FOREIGN pacman arrives the 
 LOCAL maze. 'FOREIGN pacman left' is only sent when FOREIGN pacman leave the 
 LOCAL maze. 'FOREIGN pacman died' is sent when FOREIGN pacman dies on local 
 screen. 'pacman go home' is sent when AWAY pacman is forcibly sent home. 
 'FOREIGN pacman ate ghost' is sent when FOREIGN pacman eats LOCAL ghost. 'eat' is
-sent when LOCAL food is eaten. // this paragraph need to be modified 
+sent when LOCAL food is eaten.
 
 'maze update' is only sent once when making connections 
 
 Pacman could eat two objects and ghost with certain mode. food attributes to the mark
 and powerpills can change the mode of ghost.
 
-Gameplay have two state, namely CHASE and FRIGHTEN, they have following meanings:
+Gameplay has two state, namely CHASE and FRIGHTEN, they have following meanings:
+
     # CHASE: the pacman do not eat the powerpills, so that pacmans are chased by 
              ghosts
     # FRIGHTEN: the pacman eats the powerpills, so that pacman frightens ghosts and
                 ghost could be eaten by this kind of pacman
+
+The pacman game has two status, accordingly NEXT_LEVEL_WAIT and GAME_OVER, they have
+following meanings:
+
+    # NEXT_LEVEL_WAIT: go to the next game level, everything will be reset, the difficulty
+                       will increase.
+    # GAME_OVER: run out of lives, everything will be reset but the difficulty will be
+                 initailized. 
+                 under the GAME_OVER state, if restart button 'r' is pressed the local
+                 computer goes to READY_TO_RESTART state and sends an update message. The
+                 game restarts when the second player also presses 'r', and sends a replying
+                 READY_TO_RESTART" status update.
+
+In this document, when these terms are capitalized, they have these specific meanings.
 
 Message Contents   // each section includes a type and a value 
 ================
@@ -63,22 +80,6 @@ The contents of a maze update message are:
 The contents of a FOREIGN pacman arrive message are:
 
     - Type: FOREIGN_pacman_arrive
-
-    - Value: grid_x, grid_y, width, height, direction, speed, status of the pacman.
-    
-             grid_x and grid_y is the initialization postion (x, y) for the FOREIGN 
-             pacman and grid_x and grid_y are mapped to maze size. For the initialization,
-             grid_x is 0 and grid_y is 17, which is the start point of AWAY maze.
-
-             width and height are both equal to the acutal size of the canvas
-
-             direction can be choosed from 4 direction. The protocol assumes UP = 0, LEFT = 1,
-             RIGHT = 2 and DOWN = 3
-
-             speed is the initialization speed which is 1 
-
-             status is the initialization status which CHASE mode.
-    // it do not have values !!! need to be modified
              
 The contents of a FOREIGN pacman left message are:
 
@@ -130,64 +131,291 @@ The contents of a eat message are:
              
 The contents of a score update message are:
 
+    - Type: score_update 
+
+    - Value: score
+             score is the current score the player gets 
 
 The contents of a status update message are:
 
+    - Type: status_update 
+
+    - Value: the status of the pacman could be either NEXT_LEVEL_WAIT or GAME_OVER
 
 Message Timing
 ==============
 
+While the pacmans and ghosts is moving, ghost_update and pacman_update messages SHOULD be
+sent every 20ms because this is the typical reaction time of a human [1]. If a computer 
+cannot maintain at least 50 frames per second, ghost_update and pacman_update messages
+MAY be sent once per frame, as it is unreasonable to update the remote computer more often
+than the local one.
 
+score_update message SHOULD be sent as the frequency as frame refresh, usually 60 frames per
+second. 
+
+maze_update SHOULD only need to be sent once when making connection with client or server.
+
+FOREIGN_pacman_arrive, FOREIGN_pacman_left, FOREIGN_pacman_ate_ghost, FOREIGN_pacman_died,
+and FOREIGN_pacman_go_home messages SHOULD only be sent when these situations happen. That
+is to say:
+
+    # FOREIGN_pacman_arrive SHOULD be sent when a FOREIGN pacman comes to local screen
+    # FOREIGN_pacman_left SHOULD be sent when a FOREIGN pacman leaves local screen, and 
+      go back to the opponent screen.
+    # FOREIGN_pacman_ate_ghost SHOULD be sent when a FOREIGN pacman eats LOCAL objects
+    # FOREIGN_pacman_died SHOULD be sent when a FOREIGN pacman dies on our screen
+    # FOREIGN_pacman_go_home SHOULD be sent when a FOREIGN pacman is delivered to 'home',
+      which is a local spawn of the pacman.
 
 Message Encoding
 ================
 
+Above-metioned 11 messages are fixed format and they are binary encoded. Also, all integer
+fields send in the network in byte order (i.e. big endian order) [1] Due to message type is
+fixed as the 'message contents' section metioned, it need not a explicit length field to 
+compare in big endian order.
+
+More than one messgae MAY be sent continously on a single parse, which could be helpful to
+reduce overhead when sending ghost_update and pacman_update messages
+
 maze update
 -----------
 
+maze sent only once. it can have no type and use binary encode automatically.
 
 FOREIGN pacman arrive
 ---------------------
 
+FOREIGN_pacman_arrive messages consist of One byte, encoded as follows:
+
+    0                  
+    0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+
+   |   T   |   unused  |
+   +-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = FOREIGN_pacman_arrive has decimal value 1.
+
+    - unused: 6 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
 
 FOREIGN pacman left
 -------------------
 
+FOREIGN_pacman_arrive messages consist of One byte, encoded as follows:
+
+    0                  
+    0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+
+   |   T   |   unused  |
+   +-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = FOREIGN_pacman_left has decimal value 2.
+
+    - unused: 6 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
 
 FOREIGN pacman died
 -------------------
 
+FOREIGN_pacman_died messages consist of One byte, encoded as follows:
+
+    0                  
+    0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+
+   |   T   |   unused  |
+   +-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = FOREIGN_pacman_died has decimal value 3.
+
+    - unused: 6 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
 
 pacman go home
 --------------
 
+FOREIGN_pacman_go_home messages consist of One byte, encoded as follows:
+
+    0                  
+    0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+
+   |   T   |   unused  |
+   +-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = FOREIGN_pacman_arrive has decimal value 1.
+
+    - unused: 6 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
 
 pacman update
 -------------
 
+FOREIGN_pacman_go_home messages consist of four bytes, encoded as follows:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   T   |          unused           |   posX     |   posY     | dir |   speed   |                               
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = pacman_update has decimal value 1.
+
+    - unused: 14 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
+        
+    - posX: 6 bits number field which indicates X (horizontal) postion of food which is
+            eaten by the pacman. This value SHOULD only be a number from 0 to 32.
+
+    - posY: 6 bits number field which indicates X (horizontal) postion of food which is
+            eaten by the pacman. This value SHOULD only be a number from 0 to 32.
+
+    - dir: 3 bits number field which indicates the direction of the pacman. This value
+           SHOULD only be a number from 0 to 3, which represents 4 different directions
+    
+    - speed: 6 bits number field which indicates the speed of the pacman.
+
 
 ghost update
 ------------
+ghostnum, pos, dir, speed, mode
+FOREIGN_pacman_go_home messages consist of Three bytes, encoded as follows:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   T   |        unused       | Num |   posX    |   posY    | dir |   speed   |A|                              
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = ghost_update has decimal value 1.
+    
+    - unused: 11 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
+
+    - Num: 3 bits number field which indicates the number of alive ghost. This value
+           SHOULD only be a number from 0 to 5.
+        
+    - posX: 6 bits number field which indicates X (horizontal) postion of food which is
+            eaten by the pacman. This value SHOULD only be a number from 0 to 32.
+
+    - posY: 6 bits number field which indicates Y (vertical) postion of food which is
+            eaten by the pacman. This value SHOULD only be a number from 0 to 32.
+
+    - dir: 3 bits number field which indicates the direction of the pacman. This value
+           SHOULD only be a number from 0 to 3, which represents 4 different directions
+    
+    - speed: 6 bits number field which indicates the speed of the pacman.
+
+    - A: 1 bit boolean field which indicates whether it is a FOREIGN pacman.
+
 
 
 FOREIGN pacman ate ghost
 ------------------------
 
+FOREIGN_pacman_arrive messages consist of One byte, encoded as follows:
+
+    0                  
+    0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+
+   |   T   |unused| Num|
+   +-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = FOREIGN_pacman_arrive has decimal value 4.
+
+    - unused: 3 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
+
+    - Num: 3 bits number field which indicates the number of alive ghost. This value
+           SHOULD only be a number from 0 to 5.
 
 eat
 ---
 
+eat messages consist of One byte, encoded as follows:
+
+    0                   1
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   T   |   posX    |   posY    | N |A|B|  
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = eat has decimal value 4.
+
+    - posX: 6 bits number field which indicates X (horizontal) postion of food which is
+            eaten by the pacman. This value SHOULD only be a number from 0 to 32.
+
+    - posY: 6 bits number field which indicates Y (vertical) postion of food which is
+            eaten by the pacman. This value SHOULD only be a number from 0 to 32.
+
+    - N: 2 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
+
+    - A: 1 bit boolean field which indicates whether it is a FOREIGN pacman.
+
+    - B：1 bit boolean field which indicates whether it is a powerpill
 
 score update
 ------------
 
+FOREIGN_pacman_go_home messages consist of four bytes, encoded as follows:
+
+    0                   1                   2                   3
+    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |   T   | unused|                        score                                  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+Field:
+
+    - T: 4 bits type field. Type = score_update has decimal value 1.
+
+    - unused: 4 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
+
+    - score: 32 bit unsigned integer in big-endian order
 
 status update
 -------------
 
+FOREIGN_pacman_go_home messages consist of One byte, encoded as follows:
 
+    0                  
+    0 1 2 3 4 5 6 7 8 9
+   +-+-+-+-+-+-+-+-+-+-+
+   |   T   | unused  |A|
+   +-+-+-+-+-+-+-+-+-+-+
 
+Field:
 
+    - T: 4 bits type field. Type = status_update has decimal value 10.
+
+    - unused: 5 bits, not used, but needed to maintain byte alignment. MUST be set
+              to zero in this version of the protocol.
+
+    - A: an unsigned binary field. 0 stands for NEXT_LEVEL_WAIT and 1 stands for GAME_OVER
+
+References
+==========
+[1] M.Handly (2018) 'Pong v1 Protocol Specification' from 
+https://github.com/mhandley/ENGF0002/blob/master/Assignments/assignment5/pong_v1.txt
+(Accessed: 8 December 2018)
 
 
 
